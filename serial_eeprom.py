@@ -3,8 +3,10 @@ import time
 from math import pow
 import matplotlib.pyplot as plt
 
-ALT_FREQ = 24.6
-REPETITION_LIMIT = ALT_FREQ * 5
+ALT_FREQ = 20
+REPETITION_LIMIT = ALT_FREQ * 25
+TRIGGER_CYCLE_TIME = 5
+CYCLE_ADDR_LIMIT = ALT_FREQ * TRIGGER_CYCLE_TIME
 
 def pressureToAltitude(p_zero, p):
     return 44330 * (1 - pow((p/p_zero), (1/5.255)))
@@ -26,6 +28,8 @@ current_pressure = 0
 last_read_pressure = 0
 repetition_count = 0
 count_repetition = False
+first_value = True
+trigger_memory_addr = 0
 
 while True:
     data = ser.read(1)
@@ -42,6 +46,12 @@ while True:
         # Sempre que tiver um par de bytes
         while len(buffer) >= 2:
             valor_raw = (buffer[0] << 8) | buffer[1]
+
+            if first_value:
+                first_value = False
+                del buffer[:2]
+                trigger_memory_addr = valor_raw
+                continue
 
             if valor_raw in (0x0000, 0xFFFF) or repetition_count > REPETITION_LIMIT:
                 read = False
@@ -79,6 +89,8 @@ while True:
 
 ser.close()
 
+print("Endereço do trigger", trigger_memory_addr)
+
 
 print("\nFim da transmissão.")
 print(f"Total de amostras: {len(altitudes)}")
@@ -88,6 +100,9 @@ moment = 0
 for i in range(0, len(altitudes)):
     time_stamps.append(moment)
     moment += 1 / ALT_FREQ
+
+trigger_memory_addr //= 2
+altitudes = altitudes[trigger_memory_addr-1:CYCLE_ADDR_LIMIT] + altitudes[:trigger_memory_addr-1] + altitudes[CYCLE_ADDR_LIMIT:]
 
 plt.plot(time_stamps, altitudes)
 
