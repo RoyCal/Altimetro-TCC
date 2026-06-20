@@ -4,7 +4,6 @@ from math import pow
 import matplotlib.pyplot as plt
 
 ALT_FREQ = 20
-REPETITION_LIMIT = ALT_FREQ * 25
 TRIGGER_CYCLE_TIME = 5
 CYCLE_ADDR_LIMIT = ALT_FREQ * TRIGGER_CYCLE_TIME
 
@@ -30,6 +29,7 @@ repetition_count = 0
 count_repetition = False
 first_value = True
 trigger_memory_addr = 0
+apogeu = 0
 
 while True:
     data = ser.read(1)
@@ -38,6 +38,7 @@ while True:
         ser.write(b'R')
     else:
         ser.write(b'P')
+        break
 
     if data:
         buffer.extend(data)
@@ -53,7 +54,7 @@ while True:
                 trigger_memory_addr = valor_raw
                 continue
 
-            if valor_raw in (0x0000, 0xFFFF) or repetition_count > REPETITION_LIMIT:
+            if valor_raw == 0x5253:
                 read = False
                 break
             
@@ -89,8 +90,9 @@ while True:
 
 ser.close()
 
-print("Endereço do trigger", trigger_memory_addr)
-
+print("Endereço do trigger:", trigger_memory_addr)
+print("Apogeu: ", altitudes[-1], "m", sep="")
+apogeu = altitudes.pop()
 
 print("\nFim da transmissão.")
 print(f"Total de amostras: {len(altitudes)}")
