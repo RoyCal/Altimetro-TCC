@@ -10,6 +10,8 @@ class SerialEEPROM:
         self.TRIGGER_CYCLE_TIME = 5
         self.CYCLE_ADDR_LIMIT = self.ALT_FREQ * self.TRIGGER_CYCLE_TIME
         self.SERIAL_PORT = "COM6"
+        self.altitudes = []
+        self.timestamps = []
 
     def pressureToAltitude(self, p_zero, p):
         return 44330 * (1 - pow((p/p_zero), (1/5.255)))
@@ -26,7 +28,7 @@ class SerialEEPROM:
 
             buffer = bytearray()
             pressao = []
-            altitudes = []
+            self.altitudes = []
             read = True
 
             current_pressure = 0
@@ -81,7 +83,7 @@ class SerialEEPROM:
 
                         last_read_pressure = current_pressure
                         
-                        altitudes.append(altitude := format(self.pressureToAltitude(pressao[0], valor), ".2f"))
+                        self.altitudes.append(altitude := float(format(self.pressureToAltitude(pressao[0], valor), ".2f")))
 
                         print(
                             f"{buffer[0]:02X} {buffer[1]:02X} "
@@ -97,24 +99,24 @@ class SerialEEPROM:
             ser.close()
 
             print("Endereço do trigger:", trigger_memory_addr)
-            print("Apogeu: ", altitudes[-1], "m", sep="")
-            apogeu = altitudes.pop()
+            print("Apogeu: ", self.altitudes[-1], "m", sep="")
+            apogeu = self.altitudes.pop()
 
             print("\nFim da transmissão.")
-            print(f"Total de amostras: {len(altitudes)}")
+            print(f"Total de amostras: {len(self.altitudes)}")
 
-            time_stamps = []
+            self.time_stamps = []
             moment = 0
-            for i in range(0, len(altitudes)):
-                time_stamps.append(moment)
+            for i in range(0, len(self.altitudes)):
+                self.time_stamps.append(moment)
                 moment += 1 / self.ALT_FREQ
 
             trigger_memory_addr //= 2
-            altitudes = altitudes[trigger_memory_addr-1:self.CYCLE_ADDR_LIMIT] + altitudes[:trigger_memory_addr-1] + altitudes[self.CYCLE_ADDR_LIMIT:]
+            self.altitudes = self.altitudes[trigger_memory_addr-1:self.CYCLE_ADDR_LIMIT] + self.altitudes[:trigger_memory_addr-1] + self.altitudes[self.CYCLE_ADDR_LIMIT:]
 
             # Return data instead of plotting here so the caller can
             # decide how/where to display it (main thread or separate process).
-            return time_stamps, altitudes
+            return self.time_stamps, self.altitudes
         except:
             print(f"Porta {self.SERIAL_PORT} não disponível")
 
@@ -128,6 +130,7 @@ def plot_altitude(time_stamps, altitudes):
         plt.ylabel("Altitude (m)")
         plt.title("Altitude x Tempo")
         plt.grid(True)
+        print(plt.yticks())
         plt.show()
     except Exception:
         print("Falha ao gerar o gráfico")
@@ -137,4 +140,6 @@ if __name__ == "__main__":
     result = serial_eeprom.retrieve_data()
     if result:
         time_stamps, altitudes = result
+        print(type(altitudes[0]))
+        print(altitudes[:5])
         plot_altitude(time_stamps, altitudes)

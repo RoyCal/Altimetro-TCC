@@ -76,7 +76,6 @@ class MenuScreen(Screen):
             yield Static("MENU PRINCIPAL", id="title")
             yield Button("Recuperar dados de voo", id="btn_dados")
             yield Button("Usuários", id="btn_usuario")
-            yield Button("Tipos de valores", id="btn_tipo")
             yield Button("Encerrar aplicação", id="btn_sair", variant="error")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -86,9 +85,6 @@ class MenuScreen(Screen):
 
             case "btn_usuario":
                 self.app.push_screen("users_screen")
-
-            case "btn_tipo":
-                self.app.push_screen("value_types_screen")
 
             case "btn_sair":
                 self.app.exit()
@@ -153,112 +149,24 @@ class AddUserScreen(Screen):
             yield Button("Voltar", id="btn_back", variant="error")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "btn_back":
-            self.app.pop_screen()
+        match event.button.id:
 
-        elif event.button.id == "btn_add":
-            name = self.query_one("#input_name", Input).value.strip()
+            case "btn_back":
+                self.app.pop_screen()
 
-            if not name:
-                self.notify("Digite um nome válido")
-                return
+            case "btn_add":
+                name = self.query_one("#input_name", Input).value.strip()
 
-            mysql_handler.insert_user(name)
+                if not name:
+                    self.notify("Digite um nome válido")
+                    return
 
-            self.notify(f"Usuário '{name}' adicionado!")
-            self.query_one("#input_name", Input).value = ""
-            self.app.get_screen("users_screen", UsersScreen).refresh(recompose=True)
+                mysql_handler.insert_user(name)
 
-
-# -------- VALUE TYPES --------
-class ValueTypesScreen(Screen):
-    CSS = """
-    Screen {
-        content-align: center middle;
-    }
-
-    #title {
-        margin: 1;
-    }
-
-    #subtitle {
-        margin-left: 3;
-        margin-bottom: 1;
-    }
-
-    Button {
-        margin: 1;
-    }
-    """
-
-    def load_value_types(self):
-        self.value_types = mysql_handler.get_tipos_valores()
-
-    def on_mount(self):
-        self.query_one("#btn_add").focus()
-
-    def compose(self) -> ComposeResult:
-        self.load_value_types()
-
-        with VerticalScroll():
-            yield Static("TIPOS DE VALORES", id="title")
-            yield Static("ID - USUÁRIO - DESCRIÇÃO", id="subtitle")
-
-            if not self.value_types:
-                yield Static("Nenhum tipo de valor cadastrado")
-            else:
-                for item in self.value_types:
-                    yield Static(f"📊 {item[0]} - {item[1]} - {item[2]}")
-
-            yield Button("Adicionar tipo", id="btn_add")
-            yield Button("Voltar", id="btn_back")
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "btn_back":
-            self.app.pop_screen()
-
-        elif event.button.id == "btn_add":
-            self.app.push_screen("add_value_type_screen")
-
-
-class AddValueTypeScreen(Screen):
-    def compose(self) -> ComposeResult:
-        with Vertical():
-            yield Static("ADICIONAR TIPO DE VALOR")
-            yield Input(placeholder="ID do usuário", id="input_user_id")
-            yield Input(placeholder="Descrição do tipo", id="input_description")
-            yield Button("Adicionar", id="btn_add", variant="success")
-            yield Button("Voltar", id="btn_back", variant="error")
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "btn_back":
-            self.app.pop_screen()
-
-        elif event.button.id == "btn_add":
-            user_id_text = self.query_one("#input_user_id", Input).value.strip()
-            description = self.query_one("#input_description", Input).value.strip()
-
-            if not user_id_text or not description:
-                self.notify("Preencha todos os campos")
-                return
-
-            try:
-                user_id = int(user_id_text)
-            except ValueError:
-                self.notify("Digite um ID de usuário válido")
-                return
-
-            users = mysql_handler.get_users()
-            if not any(user[0] == user_id for user in users):
-                self.notify("Usuário não encontrado")
-                return
-
-            mysql_handler.insert_tipo_valor(user_id, description)
-
-            self.notify(f"Tipo '{description}' adicionado!")
-            self.query_one("#input_user_id", Input).value = ""
-            self.query_one("#input_description", Input).value = ""
-            self.app.get_screen("value_types_screen", ValueTypesScreen).refresh(recompose=True)
+                self.notify(f"Usuário '{name}' adicionado!")
+                self.query_one("#input_name", Input).value = ""
+                self.app.get_screen("users_screen", UsersScreen).refresh(recompose=True)
+                self.app.pop_screen()
 
 # -------- RECUPERAR DADOS --------
 
@@ -277,11 +185,13 @@ class RetrieveDataScreen(Screen):
     }
 
     #button_container {
-        height: 6;
+        content-align: center middle;
+        height: auto;
     }
 
     Button {
         margin: 1;
+        margin-bottom: 0;
     }
     """
 
@@ -299,9 +209,11 @@ class RetrieveDataScreen(Screen):
             
             with Horizontal(id="button_container"):
                 yield Button("Reload page", id="btn_reload", variant="primary")
+                yield Button("Clear log", id="btn_clr_log", variant="primary")
                 yield Button("Iniciar recuperação", id="btn_retrieve", variant="success")
 
             yield Log(id="log_output", highlight=True, auto_scroll=True)
+            yield Button("Cadastrar no banco", id="btn_save", variant="success")
             yield Button("Voltar", id="btn_back", variant="error")
 
     def write_log(self, message: str) -> None:
@@ -323,23 +235,106 @@ class RetrieveDataScreen(Screen):
             print("Erro ao iniciar plot:", e)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "btn_back":
-            self.app.pop_screen()
+        match event.button.id:
 
-        elif event.button.id == "btn_retrieve":
-            selected_port = self.query_one("#serial_port_select", Select).value
+            case "btn_back":
+                self.app.pop_screen()
 
-            if not selected_port or selected_port == Select.NULL:
-                self.notify("Selecione uma porta serial antes de iniciar a recuperação")
-                return
-            
-            serial_eeprom.SERIAL_PORT = selected_port
-            # Run retrieval in a background thread so the Textual UI can
-            # update the log in real time while matplotlib shows plots.
-            threading.Thread(target=self.get_data, daemon=True).start()
+            case "btn_retrieve":
+                selected_port = self.query_one("#serial_port_select", Select).value
 
-        elif event.button.id == "btn_reload":
-            self.app.get_screen("retrieve_data_screen", RetrieveDataScreen).refresh(recompose=True)
+                if not selected_port or selected_port == Select.NULL:
+                    self.notify("Selecione uma porta serial antes de iniciar a recuperação")
+                    return
+                
+                serial_eeprom.SERIAL_PORT = selected_port
+                # Run retrieval in a background thread so the Textual UI can
+                # update the log in real time while matplotlib shows plots.
+                threading.Thread(target=self.get_data, daemon=True).start()
+
+            case "btn_reload":
+                self.app.get_screen("retrieve_data_screen", RetrieveDataScreen).refresh(recompose=True)
+
+            case "btn_clr_log":
+                self.query_one("#log_output", Log).clear()
+
+            case "btn_save":
+                self.app.push_screen("save_measurement_screen")
+
+
+class SaveMeasurementScreen(Screen):
+    CSS = """
+    Screen {
+        content-align: center middle;
+    }
+
+    Static {
+        margin: 1;
+    }
+
+    Button {
+        margin: 1;
+    }
+    """
+
+    def load_users(self):
+        self.users = mysql_handler.get_users()
+
+    def on_mount(self):
+        self.query_one("#input_title").focus()
+
+    def compose(self) -> ComposeResult:
+        self.load_users()
+
+        with VerticalScroll():
+            yield Static("CADASTRAR MEDIÇÃO", id="title")
+            yield Input(placeholder="Título da medição", id="input_title")
+            yield Input(placeholder="Descrição da medição", id="input_description")
+            yield Select(
+                options=[(u[1], u[0]) for u in self.users],
+                prompt="Selecione o usuário",
+                id="select_user",
+            )
+            yield Button("Cadastrar", id="btn_register", variant="success")
+            yield Button("Voltar", id="btn_back", variant="error")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        match event.button.id:
+            case "btn_back":
+                self.app.pop_screen()
+
+            case "btn_register":
+                title = self.query_one("#input_title", Input).value.strip()
+                description = self.query_one("#input_description", Input).value.strip()
+                user_id = self.query_one("#select_user", Select).value
+
+                if not title:
+                    self.notify("Digite um título válido")
+                    return
+
+                if not description:
+                    self.notify("Digite uma descrição válida")
+                    return
+
+                if not user_id:
+                    self.notify("Selecione um usuário")
+                    return
+
+                if not serial_eeprom.altitudes:
+                    self.notify("Nenhuma medição disponível para cadastrar")
+                    return
+
+                try:
+                    id_tipo = mysql_handler.insert_tipo_valor(user_id, title, description)
+                    mysql_handler.insert_altitudes_measurements(id_tipo, serial_eeprom.altitudes)
+                    self.notify("Medição cadastrada com sucesso")
+                    self.app.pop_screen()
+                except Exception as e:
+                    self.notify(f"Erro ao cadastrar: {e}")
+
+
+# ------ CADASTRAR NO BANCO ------
+
 
 # -------- APP --------
 class MyApp(App):
@@ -347,9 +342,8 @@ class MyApp(App):
         "menu_screen": MenuScreen,
         "users_screen": UsersScreen,
         "add_user_screen": AddUserScreen,
-        "value_types_screen": ValueTypesScreen,
-        "add_value_type_screen": AddValueTypeScreen,
         "retrieve_data_screen": RetrieveDataScreen,
+        "save_measurement_screen": SaveMeasurementScreen,
     }
 
     def __init__(self):
