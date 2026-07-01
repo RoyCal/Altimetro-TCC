@@ -140,6 +140,4 @@ if __name__ == "__main__":
     result = serial_eeprom.retrieve_data()
     if result:
         time_stamps, altitudes = result
-        print(type(altitudes[0]))
-        print(altitudes[:5])
         plot_altitude(time_stamps, altitudes)

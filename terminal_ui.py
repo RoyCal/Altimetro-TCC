@@ -189,6 +189,12 @@ class RetrieveDataScreen(Screen):
         height: auto;
     }
 
+    #button_container2 {
+        content-align: center middle;
+        height: auto;
+        margin-bottom: 2;
+    }
+
     Button {
         margin: 1;
         margin-bottom: 0;
@@ -213,8 +219,9 @@ class RetrieveDataScreen(Screen):
                 yield Button("Iniciar recuperação", id="btn_retrieve", variant="success")
 
             yield Log(id="log_output", highlight=True, auto_scroll=True)
-            yield Button("Cadastrar no banco", id="btn_save", variant="success")
-            yield Button("Voltar", id="btn_back", variant="error")
+            with Horizontal(id="button_container2"):
+                yield Button("Cadastrar no banco", id="btn_save", variant="success")
+                yield Button("Voltar", id="btn_back", variant="error")
 
     def write_log(self, message: str) -> None:
         log_output = self.query_one("#log_output", Log)
@@ -261,7 +268,7 @@ class RetrieveDataScreen(Screen):
             case "btn_save":
                 self.app.push_screen("save_measurement_screen")
 
-
+# ------ CADASTRAR NO BANCO ------
 class SaveMeasurementScreen(Screen):
     CSS = """
     Screen {
@@ -295,8 +302,9 @@ class SaveMeasurementScreen(Screen):
                 prompt="Selecione o usuário",
                 id="select_user",
             )
-            yield Button("Cadastrar", id="btn_register", variant="success")
-            yield Button("Voltar", id="btn_back", variant="error")
+            with Horizontal(id="button_container"):
+                yield Button("Cadastrar", id="btn_register", variant="success")
+                yield Button("Voltar", id="btn_back", variant="error")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         match event.button.id:
@@ -331,9 +339,6 @@ class SaveMeasurementScreen(Screen):
                     self.app.pop_screen()
                 except Exception as e:
                     self.notify(f"Erro ao cadastrar: {e}")
-
-
-# ------ CADASTRAR NO BANCO ------
 
 
 # -------- APP --------
