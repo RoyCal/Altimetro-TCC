@@ -110,22 +110,19 @@ class SerialEEPROM:
                     ser.write(self.pacotes["parar"])
                     break
 
-                
-                payload = data 
-
                 # Verifica erro na transmissão
-                if payload[3] == 21:
+                if data[3] == 21:
                     ser.write(self.pacotes["receber"])
                     continue
 
                 if first_value:
                     # Os dois primeiros bytes são o endereço
-                    trigger_memory_addr = (payload[4] << 8) | payload[5]
+                    trigger_memory_addr = (data[4] << 8) | data[5]
 
                     # Os quatro últimos bytes são dois valores de pressão
-                    p1 = (payload[6] << 8) | payload[7]
+                    p1 = (data[6] << 8) | data[7]
                     pressao_base = p1 * 10
-                    p2 = (payload[8] << 8) | payload[9]
+                    p2 = (data[8] << 8) | data[9]
 
                     self.altitudes.append(altitude1 := self.pressureToAltitude(pressao_base, p1 * 10))
                     self.altitudes.append(altitude2 := self.pressureToAltitude(pressao_base, p2 * 10))
@@ -138,12 +135,12 @@ class SerialEEPROM:
                 else:
                     # Três valores de pressão
                     for i in range(4, 10, 2):
-                        if payload[i] == 0x52:
-                            if payload[i+1] == 0x53:
+                        if data[i] == 0x52:
+                            if data[i+1] == 0x53:
                                 read = False
                                 ser.write(self.pacotes["parar"])
                                 break
-                        pressure = (payload[i] << 8) | payload[i + 1]
+                        pressure = (data[i] << 8) | data[i + 1]
                         self.altitudes.append(altitude := self.pressureToAltitude(pressao_base, pressure * 10))
                         print(f'{hex(pressure)} -> {pressure * 10} Pa -> {altitude}m')
 
@@ -155,7 +152,7 @@ class SerialEEPROM:
 
             print("Endereço do trigger:", trigger_memory_addr)
             print("Apogeu: ", self.altitudes[-1], "m", sep="")
-            apogeu = self.altitudes.pop()
+            self.altitudes.pop()
 
             print("\nFim da transmissão.")
             print(f"Total de amostras: {len(self.altitudes)}")
@@ -174,6 +171,36 @@ class SerialEEPROM:
             return self.time_stamps, self.altitudes
         except:
             print(f"Porta {self.SERIAL_PORT} não disponível")
+        finally:
+            ser.close()
+
+    def get_alt_infos(self):
+        try:
+            ser = serial.Serial(self.SERIAL_PORT, 9600, timeout=0.1)
+            ser.write(self.pacotes["infos"])
+
+            print("Esperando dados do PIC...")
+
+            data = ser.read(12) 
+            id_alt = data[5]
+            id_software = data[6] & 0x0F
+            id_hardware = (data[6] >> 4) & 0x0F
+            flights_conter = (data[7] << 8) | data[8]
+            status = data[9]
+            print(f"ID da placa: {id_alt}")
+            print(f"Versão -> software: {id_software}, hardware: {id_hardware}")
+            print(f"Contagem de voos: {flights_conter}")
+            print(f"Status: {status} ({"recupere os dados" if status == 0x00 else "memória livre"})")
+
+        except:
+            print(f"Porta {self.SERIAL_PORT} não disponível")
+        
+        finally: 
+            try:
+                ser.close()
+
+            except UnboundLocalError as e:
+                print(f"{e}: Por favor, espere a recuperação terminar!")
 
 def plot_altitude(time_stamps, altitudes):
     """Module-level plot function so it can be used as a multiprocessing

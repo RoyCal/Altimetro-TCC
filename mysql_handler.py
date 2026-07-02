@@ -23,10 +23,7 @@ class MysqlHandler:
         resultado = self.cursor.fetchone()
 
         if resultado is None:
-            print(f"Criando banco '{DATABASE}'...")
             self.cursor.execute(f"CREATE DATABASE {DATABASE}")
-        else:
-            print(f"O banco '{DATABASE}' já existe.")
 
         self.cursor.execute(f"USE {DATABASE}")
 
