@@ -20,27 +20,106 @@ print(f"Conectado em {PORTA}")
 
 while True:
 
-    input("\nPressione ENTER para enviar um pacote...")
+    print("\nEscolha o pacote:")
+    print("1 - Padrão")
+    print("2 - Parar")
+    print("3 - Infos")
+    print("4 - Mede BMP")
+    print("5 - Grava Status")
+    print("6 - Manual")
+
+    opcao = input("Opção: ").strip().lower()
 
     # Limpa buffers
     ser.reset_input_buffer()
     ser.reset_output_buffer()
 
-    # Pacote de 12 bytes
-    pacote_tx = bytes([
-        1,
-        251,
-        1,
-        55,
-        255,
-        255,
-        255,
-        255,
-        255,
-        255,
-        255,
-        0
-    ])
+    pacotes = {
+        "1": bytes([
+            1,
+            251,
+            1,
+            55,
+            255,
+            6,
+            255,
+            255,
+            255,
+            255,
+            255,
+            52
+        ]),
+        "2": bytes([
+            1,
+            251,
+            1,
+            55,
+            255,
+            0,
+            255,
+            255,
+            255,
+            255,
+            255,
+            46
+        ]),
+        "3": bytes([
+            1,
+            251,
+            1,
+            83,
+            1,
+            255,
+            255,
+            255,
+            255,
+            255,
+            255,
+            75
+        ]),
+        "4": bytes([
+            1,
+            251,
+            1,
+            84,
+            1,
+            255,
+            255,
+            255,
+            255,
+            255,
+            255,
+            76
+        ]),
+        "5": bytes([
+            1,
+            251,
+            1,
+            51,
+            255,
+            255,
+            255,
+            255,
+            255,
+            255,
+            255,
+            41
+        ])
+    }
+
+    if opcao == "6":
+        entrada = input("Digite 12 bytes em hexadecimal (ex.: 01 FB 01 37 FF FF FF FF FF FF FF 45) ou pressione ENTER para usar o padrão: ").strip()
+        if entrada:
+            partes = entrada.replace(",", " ").split()
+            if len(partes) != 12:
+                print("Erro: informe exatamente 12 bytes.")
+                continue
+            pacote_tx = bytes(int(p, 16) & 0xFF for p in partes)
+        else:
+            print("Nenhum byte informado. Usando o pacote padrão.")
+            pacote_tx = pacotes["1"]
+    else:
+        pacote_tx = pacotes.get(opcao, pacotes["1"])
 
     print("TX:", " ".join(f"{b:02X}" for b in pacote_tx))
 

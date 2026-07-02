@@ -12,89 +12,144 @@ class SerialEEPROM:
         self.SERIAL_PORT = "COM6"
         self.altitudes = []
         self.timestamps = []
+        self.pacotes = {
+        "receber": bytes([
+            1,
+            251,
+            1,
+            55,
+            255,
+            6,
+            255,
+            255,
+            255,
+            255,
+            255,
+            52
+        ]),
+        "parar": bytes([
+            1,
+            251,
+            1,
+            55,
+            255,
+            0,
+            255,
+            255,
+            255,
+            255,
+            255,
+            46
+        ]),
+        "infos": bytes([
+            1,
+            251,
+            1,
+            83,
+            1,
+            255,
+            255,
+            255,
+            255,
+            255,
+            255,
+            75
+        ]),
+        "mede_bmp": bytes([
+            1,
+            251,
+            1,
+            84,
+            1,
+            255,
+            255,
+            255,
+            255,
+            255,
+            255,
+            76
+        ]),
+        "libera_voo": bytes([
+            1,
+            251,
+            1,
+            51,
+            255,
+            255,
+            255,
+            255,
+            255,
+            255,
+            255,
+            41
+        ])
+    }
 
     def pressureToAltitude(self, p_zero, p):
-        return 44330 * (1 - pow((p/p_zero), (1/5.255)))
+        return round(44330 * (1 - pow((p/p_zero), (1/5.255))), 2)
     
     def retrieve_data(self):
         try:
             ser = serial.Serial(self.SERIAL_PORT, 9600, timeout=0.1)
 
-            ser.write(b'R')
+            ser.write(self.pacotes["receber"])
 
             print("Esperando dados do PIC...")
 
-            ultimo_recebimento = time.time()
-
-            buffer = bytearray()
-            pressao = []
+            pressao_base = 0
             self.altitudes = []
             read = True
 
-            current_pressure = 0
-            last_read_pressure = 0
-            repetition_count = 0
-            count_repetition = False
             first_value = True
-            trigger_memory_addr = 0
-            apogeu = 0
+            trigger_memory_addr = None
 
-            while True:
-                data = ser.read(1)
+            while read:
+                data = ser.read(12)
 
-                if read:
-                    ser.write(b'R')
+                if len(data) < 12:
+                    ser.write(self.pacotes["parar"])
+                    break
+
+                
+                payload = data 
+
+                # Verifica erro na transmissão
+                if payload[3] == 21:
+                    ser.write(self.pacotes["receber"])
+                    continue
+
+                if first_value:
+                    # Os dois primeiros bytes são o endereço
+                    trigger_memory_addr = (payload[4] << 8) | payload[5]
+
+                    # Os quatro últimos bytes são dois valores de pressão
+                    p1 = (payload[6] << 8) | payload[7]
+                    pressao_base = p1 * 10
+                    p2 = (payload[8] << 8) | payload[9]
+
+                    self.altitudes.append(altitude1 := self.pressureToAltitude(pressao_base, p1 * 10))
+                    self.altitudes.append(altitude2 := self.pressureToAltitude(pressao_base, p2 * 10))
+
+                    first_value = False
+
+                    print(f'{hex(p1)} -> {p1 * 10} Pa -> {altitude1}m')
+                    print(f'{hex(p2)} -> {p2 * 10} Pa -> {altitude2}m')
+
                 else:
-                    ser.write(b'P')
-                    break
+                    # Três valores de pressão
+                    for i in range(4, 10, 2):
+                        if payload[i] == 0x52:
+                            if payload[i+1] == 0x53:
+                                read = False
+                                ser.write(self.pacotes["parar"])
+                                break
+                        pressure = (payload[i] << 8) | payload[i + 1]
+                        self.altitudes.append(altitude := self.pressureToAltitude(pressao_base, pressure * 10))
+                        print(f'{hex(pressure)} -> {pressure * 10} Pa -> {altitude}m')
 
-                if data:
-                    buffer.extend(data)
-                    ultimo_recebimento = time.time()
-
-                    # Sempre que tiver um par de bytes
-                    while len(buffer) >= 2:
-                        valor_raw = (buffer[0] << 8) | buffer[1]
-
-                        if first_value:
-                            first_value = False
-                            del buffer[:2]
-                            trigger_memory_addr = valor_raw
-                            continue
-
-                        if valor_raw == 0x5253:
-                            read = False
-                            break
-                        
-                        valor = valor_raw * 10
-                        current_pressure = valor
-
-                        if len(pressao) == 0:
-                            pressao.append(valor)
-
-                        if valor != pressao[0]:
-                            count_repetition = True
-
-                        if count_repetition:
-                            if current_pressure == last_read_pressure:
-                                repetition_count += 1
-                            else:
-                                repetition_count = 0
-
-                        last_read_pressure = current_pressure
-                        
-                        self.altitudes.append(altitude := float(format(self.pressureToAltitude(pressao[0], valor), ".2f")))
-
-                        print(
-                            f"{buffer[0]:02X} {buffer[1]:02X} "
-                            f"-> {valor} Pa"
-                            f" -> {altitude}m"
-                        )
-
-                        del buffer[:2]
-
-                elif time.time() - ultimo_recebimento >= 2:
-                    break
+                # Solicita o próximo pacote
+                if read: 
+                    ser.write(self.pacotes["receber"])
 
             ser.close()
 
@@ -130,7 +185,6 @@ def plot_altitude(time_stamps, altitudes):
         plt.ylabel("Altitude (m)")
         plt.title("Altitude x Tempo")
         plt.grid(True)
-        print(plt.yticks())
         plt.show()
     except Exception:
         print("Falha ao gerar o gráfico")
