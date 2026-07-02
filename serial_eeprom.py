@@ -10,6 +10,7 @@ class SerialEEPROM:
         self.TRIGGER_CYCLE_TIME = 5
         self.CYCLE_ADDR_LIMIT = self.ALT_FREQ * self.TRIGGER_CYCLE_TIME
         self.SERIAL_PORT = "COM6"
+        self.baud_rate = 19200
         self.altitudes = []
         self.timestamps = []
         self.pacotes = {
@@ -90,8 +91,9 @@ class SerialEEPROM:
     
     def retrieve_data(self):
         try:
-            ser = serial.Serial(self.SERIAL_PORT, 9600, timeout=0.1)
+            ser = serial.Serial(self.SERIAL_PORT, self.baud_rate, timeout=0.1)
 
+            ser.write(self.pacotes["parar"])
             ser.write(self.pacotes["receber"])
 
             print("Esperando dados do PIC...")
@@ -176,7 +178,7 @@ class SerialEEPROM:
 
     def get_alt_infos(self):
         try:
-            ser = serial.Serial(self.SERIAL_PORT, 9600, timeout=0.1)
+            ser = serial.Serial(self.SERIAL_PORT, self.baud_rate, timeout=0.1)
             ser.write(self.pacotes["infos"])
 
             print("Esperando dados do PIC...")
@@ -204,17 +206,42 @@ class SerialEEPROM:
 
     def enable_flight(self):
         try:
-            ser = serial.Serial(self.SERIAL_PORT, 9600, timeout=0.1)
+            ser = serial.Serial(self.SERIAL_PORT, self.baud_rate, timeout=0.1)
             ser.write(self.pacotes["libera_voo"])
 
             print("Esperando resposta do PIC...")
 
             data = ser.read(12) 
 
-            if data[3] == 6:
-                print("Voo liberado!")
-            else:
-                print("Erro ao liberar voo...")
+            while data[3] != 6:
+                ser.write(self.pacotes["libera_voo"])
+                data = ser.read(12)
+
+            print("Voo liberado!")
+
+        except:
+            print(f"Porta {self.SERIAL_PORT} não disponível")
+        finally:
+            try:
+                ser.close()
+            except UnboundLocalError as e:
+                print(f"{e}: Por favor, espere a recuperação terminar!")
+    
+    def test_bmp(self):
+        try:
+            ser = serial.Serial(self.SERIAL_PORT, self.baud_rate, timeout=0.2)
+            ser.write(self.pacotes["mede_bmp"])
+
+            print("Esperando resposta do PIC...")
+
+            data = ser.read(12) 
+
+            while data[3] != 86:
+                ser.write(self.pacotes["mede_bmp"])
+                data = ser.read(12)
+
+            pressure = int.from_bytes(data[4:8], byteorder="big")
+            print(f"Valor lido pelo BMP: {pressure} Pa ({hex(pressure)})")
 
         except:
             print(f"Porta {self.SERIAL_PORT} não disponível")

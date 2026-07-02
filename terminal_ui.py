@@ -216,8 +216,9 @@ class RetrieveDataScreen(Screen):
             with Horizontal(id="button_container"):
                 yield Button("Reload page", id="btn_reload", variant="primary")
                 yield Button("Clear log", id="btn_clr_log", variant="primary")
-                yield Button("Get device info", id="btn_info", variant="primary")
+                yield Button("Device info", id="btn_info", variant="primary")
                 yield Button("Enable flight", id="btn_enable", variant="primary")
+                yield Button("Test BMP", id="btn_test_bmp", variant="primary")
                 yield Button("Iniciar recuperação", id="btn_retrieve", variant="success")
 
             yield Log(id="log_output", highlight=True, auto_scroll=True)
@@ -274,7 +275,7 @@ class RetrieveDataScreen(Screen):
                 selected_port = self.query_one("#serial_port_select", Select).value
 
                 if not selected_port or selected_port == Select.NULL:
-                    self.notify("Selecione uma porta serial antes de iniciar a recuperação")
+                    self.notify("Selecione uma porta serial antes de obter as infomações do dispositivo")
                     return
                 
                 serial_eeprom.SERIAL_PORT = selected_port
@@ -285,12 +286,23 @@ class RetrieveDataScreen(Screen):
                 selected_port = self.query_one("#serial_port_select", Select).value
 
                 if not selected_port or selected_port == Select.NULL:
-                    self.notify("Selecione uma porta serial antes de iniciar a recuperação")
+                    self.notify("Selecione uma porta serial antes de habilitar o voo")
                     return
                 
                 serial_eeprom.SERIAL_PORT = selected_port
 
                 serial_eeprom.enable_flight()
+            
+            case "btn_test_bmp":
+                selected_port = self.query_one("#serial_port_select", Select).value
+
+                if not selected_port or selected_port == Select.NULL:
+                    self.notify("Selecione uma porta serial antes de testar o BMP")
+                    return
+                
+                serial_eeprom.SERIAL_PORT = selected_port
+
+                serial_eeprom.test_bmp()
 
 # ------ CADASTRAR NO BANCO ------
 class SaveMeasurementScreen(Screen):
