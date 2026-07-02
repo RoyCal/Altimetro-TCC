@@ -217,6 +217,7 @@ class RetrieveDataScreen(Screen):
                 yield Button("Reload page", id="btn_reload", variant="primary")
                 yield Button("Clear log", id="btn_clr_log", variant="primary")
                 yield Button("Get device info", id="btn_info", variant="primary")
+                yield Button("Enable flight", id="btn_enable", variant="primary")
                 yield Button("Iniciar recuperação", id="btn_retrieve", variant="success")
 
             yield Log(id="log_output", highlight=True, auto_scroll=True)
@@ -279,6 +280,17 @@ class RetrieveDataScreen(Screen):
                 serial_eeprom.SERIAL_PORT = selected_port
 
                 serial_eeprom.get_alt_infos()
+            
+            case "btn_enable":
+                selected_port = self.query_one("#serial_port_select", Select).value
+
+                if not selected_port or selected_port == Select.NULL:
+                    self.notify("Selecione uma porta serial antes de iniciar a recuperação")
+                    return
+                
+                serial_eeprom.SERIAL_PORT = selected_port
+
+                serial_eeprom.enable_flight()
 
 # ------ CADASTRAR NO BANCO ------
 class SaveMeasurementScreen(Screen):

@@ -202,6 +202,28 @@ class SerialEEPROM:
             except UnboundLocalError as e:
                 print(f"{e}: Por favor, espere a recuperação terminar!")
 
+    def enable_flight(self):
+        try:
+            ser = serial.Serial(self.SERIAL_PORT, 9600, timeout=0.1)
+            ser.write(self.pacotes["libera_voo"])
+
+            print("Esperando resposta do PIC...")
+
+            data = ser.read(12) 
+
+            if data[3] == 6:
+                print("Voo liberado!")
+            else:
+                print("Erro ao liberar voo...")
+
+        except:
+            print(f"Porta {self.SERIAL_PORT} não disponível")
+        finally:
+            try:
+                ser.close()
+            except UnboundLocalError as e:
+                print(f"{e}: Por favor, espere a recuperação terminar!")
+
 def plot_altitude(time_stamps, altitudes):
     """Module-level plot function so it can be used as a multiprocessing
     target (picklable) on Windows. Runs a Matplotlib GUI in its own
