@@ -1,24 +1,16 @@
 ;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-;*              MODIFICA√?√?ES PARA USO COM 12F675                   *
-;*                FEITAS PELO PROF. MARDSON                        *
-;*                      DEZEMBRO DE 2024                           *
-;*                 BASEADO NO EXEMPLO DO LIVRO                     *
-;*           Desbravando o PIC. David Jos√© de Souza                *
-;*-----------------------------------------------------------------*
-;*   MODELO PARA O PIC 12F675                                      *
+;*            ALTÕMETRO PARA FOGUETES SUBORBITAIS		   *
+;*		     FIRMWARE VERS√O 1.0                           *
+;*                      JULHO DE 2026	                           *
+;*                                                                 *
+;*               AUTOR: VITO ELIAS DE QUEIROGA                     *
+;*        CONTRIBUI«√O COM O PROJETO: CANGA«O NO ESPA«O            *
+;*               UNIVERSIDADE FEDERAL DA PARAÕBA                   *
 ;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-
-;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-;*                     ARQUIVOS DE DEFINI√?√?ES                      *
-;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-#INCLUDE <p16f628a.inc>	;ARQUIVO PADR√?O MICROCHIP PARA 12F675
+	
+#INCLUDE <p16f628a.inc>
 
 	__CONFIG _BODEN_OFF & _CP_OFF & _PWRTE_ON & _WDT_OFF & _MCLRE_OFF & _HS_OSC
-	
-;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-;*                    PAGINA√?√?O DE MEM√?RIA                         *
-;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-;DEFINI√?√?O DE COMANDOS DE USU√ÅRIO PARA ALTERA√?√?O DA P√ÅGINA DE MEM√?RIA
 
 #DEFINE	BANK0	BCF STATUS,RP0	;SETA BANK 0 DE MEM√?RIA
 #DEFINE	BANK1	BSF STATUS,RP0	;SETA BANK 1 DE MAM√?RIA
@@ -26,19 +18,16 @@
 ;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 ;*                         VARI√ÅVEIS                               *
 ;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-; DEFINI√?√?O DOS NOMES E ENDERE√?OS DE TODAS AS VARI√ÅVEIS UTILIZADAS 
-; PELO SISTEMA
 
-	CBLOCK	0x20	;ENDERE√?O INICIAL DA MEM√?RIA DE
-					;USU√ÅRIO
-		W_TEMP		;REGISTRADORES TEMPOR√ÅRIOS PARA USO
-		STATUS_TEMP	;JUNTO √?S INTERRUP√?√?ES
+	CBLOCK	0x20
+		W_TEMP			    ;REGISTRADORES TEMPOR√ÅRIOS PARA USO
+		STATUS_TEMP		    ;JUNTO √?S INTERRUP√?√?ES
 		
-		I2C_BYTE        ; byte para enviar/receber
-		COUNT			; contador de bits
-		EEPROM_H        ; endereÁo alto
-		EEPROM_L        ; endereÁo baixo
-		DADO            ; dado a escrever
+		I2C_BYTE		    ; byte para enviar/receber
+		COUNT			    ; contador de bits
+		EEPROM_H		    ; endereÁo alto
+		EEPROM_L		    ; endereÁo baixo
+		DADO			    ; dado a escrever
 		
 		NUM1_BYTE0 ;0x27	   ; PRIMEIRO N⁄MERO DA SOMA DE 32 BITS
 		NUM1_BYTE1
@@ -150,33 +139,8 @@
 		COUNTER_2
 		
 		CRC8_CALC
-		
-		;COLOQUE AQUI SUAS NOVAS VARI√ÅVEIS
-		;N√?O ESQUE√?A COMENT√ÅRIOS ESCLARECEDORES
 
 	ENDC			;FIM DO BLOCO DE DEFINI√?√?O DE VARI√ÅVEIS
-
-;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-;*                        FLAGS INTERNOS                           *
-;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-; DEFINI√?√?O DE TODOS OS FLAGS UTILIZADOS PELO SISTEMA
-
-;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-;*                         CONSTANTES                              *
-;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-; DEFINI√?√?O DE TODAS AS CONSTANTES UTILIZADAS PELO SISTEMA
-
-;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-;*                           ENTRADAS                              *
-;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-; DEFINI√?√?O DE TODOS OS PINOS QUE SER√?O UTILIZADOS COMO ENTRADA
-; RECOMENDAMOS TAMB√?M COMENTAR O SIGNIFICADO DE SEUS ESTADOS (0 E 1)
-
-;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-;*                           SA√çDAS                                *
-;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-; DEFINI√?√?O DE TODOS OS PINOS QUE SER√?O UTILIZADOS COMO SA√çDA
-; RECOMENDAMOS TAMB√?M COMENTAR O SIGNIFICADO DE SEUS ESTADOS (0 E 1)
 	
 #DEFINE SDA PORTA,RA0
 #DEFINE	SDA_TRISIO TRISA,0
@@ -187,20 +151,9 @@
 #DEFINE MODE_SELECT PORTB,RB3
 #DEFINE GREEN_LED PORTA,RA2
 #DEFINE BLUE_LED PORTA,RA3
-	
-
-;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-;*                       VETOR DE RESET                            *
-;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 	ORG	0x00			;ENDERE√?O INICIAL DE PROCESSAMENTO
 	GOTO	INICIO
-
-;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-;*	            	 ROTINAS E SUBROTINAS                      *
-;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-; CADA ROTINA OU SUBROTINA DEVE POSSUIR A DESCRI√?√?O DE FUNCIONAMENTO
-; E UM NOME COERENTE √?S SUAS FUN√?√?ES.
 	
 ; SOLTA O SDA, QUE DEVE IR PARA HIGH ATRAV…S DE RESISTORES PULL-UP
 SDA_RELEASE
@@ -499,67 +452,67 @@ DIG_EEPROM_LOOP
 
 ; SOMA NUM1 COM NUM2 E GUARDA O RESULTADO EM NUM2
 SUM_32_32
-    CLRF	W_TEMP
-	
-    MOVFW	NUM1_BYTE0
-    ADDWF	NUM2_BYTE0_AND_RESULT,F
-    BTFSC	STATUS,C
-    BSF		W_TEMP,0
-    
-    MOVFW	NUM1_BYTE1
-    ADDWF	NUM2_BYTE1_AND_RESULT,F
-    BTFSC	STATUS,C
-    BSF		W_TEMP,1
-    MOVLW	.1
-    BTFSS	W_TEMP,0
-    GOTO	SUM_CONT
-    ADDWF	NUM2_BYTE1_AND_RESULT,F
-    BTFSC	STATUS,C
-    BSF		W_TEMP,1
+	CLRF	W_TEMP
+
+	MOVFW	NUM1_BYTE0
+	ADDWF	NUM2_BYTE0_AND_RESULT,F
+	BTFSC	STATUS,C
+	BSF	W_TEMP,0
+
+	MOVFW	NUM1_BYTE1
+	ADDWF	NUM2_BYTE1_AND_RESULT,F
+	BTFSC	STATUS,C
+	BSF	W_TEMP,1
+	MOVLW	.1
+	BTFSS	W_TEMP,0
+	GOTO	SUM_CONT
+	ADDWF	NUM2_BYTE1_AND_RESULT,F
+	BTFSC	STATUS,C
+	BSF	W_TEMP,1
 SUM_CONT
-    MOVFW	NUM1_BYTE2
-    ADDWF	NUM2_BYTE2_AND_RESULT,F
-    BTFSC	STATUS,C
-    BSF		W_TEMP,2
-    MOVLW	.1
-    BTFSS	W_TEMP,1
-    GOTO	SUM_CONT_1
-    ADDWF	NUM2_BYTE2_AND_RESULT,F
-    BTFSC	STATUS,C
-    BSF		W_TEMP,2
+	MOVFW	NUM1_BYTE2
+	ADDWF	NUM2_BYTE2_AND_RESULT,F
+	BTFSC	STATUS,C
+	BSF	W_TEMP,2
+	MOVLW	.1
+	BTFSS	W_TEMP,1
+	GOTO	SUM_CONT_1
+	ADDWF	NUM2_BYTE2_AND_RESULT,F
+	BTFSC	STATUS,C
+	BSF	W_TEMP,2
 SUM_CONT_1
-    MOVFW	NUM1_BYTE3
-    ADDWF	NUM2_BYTE3_AND_RESULT,F
-    BTFSC	STATUS,C
-    BSF		W_TEMP,3
-    MOVLW	.1
-    BTFSS	W_TEMP,2
-    GOTO	SUM_CONT_2
-    ADDWF	NUM2_BYTE3_AND_RESULT,F
-    BTFSC	STATUS,C
-    BSF		W_TEMP,3
+	MOVFW	NUM1_BYTE3
+	ADDWF	NUM2_BYTE3_AND_RESULT,F
+	BTFSC	STATUS,C
+	BSF	W_TEMP,3
+	MOVLW	.1
+	BTFSS	W_TEMP,2
+	GOTO	SUM_CONT_2
+	ADDWF	NUM2_BYTE3_AND_RESULT,F
+	BTFSC	STATUS,C
+	BSF	W_TEMP,3
 SUM_CONT_2
-    RETURN
+	RETURN
 
 ; SUBTRAI NUM1 DE NUM2 E GUARDA O RESULTADO EM NUM2
 SUB_32_32
-    BSF     STATUS, C
-    MOVFW    NUM1_BYTE0
-    SUBWF   NUM2_BYTE0_AND_RESULT, F
-    MOVFW    NUM1_BYTE1
-    BTFSS   STATUS, C        
-    ADDLW   .1                
-    SUBWF   NUM2_BYTE1_AND_RESULT, F
-    MOVFW    NUM1_BYTE2
-    BTFSS   STATUS, C
-    ADDLW   .1
-    SUBWF   NUM2_BYTE2_AND_RESULT, F
-    MOVFW    NUM1_BYTE3
-    BTFSS   STATUS, C
-    ADDLW   .1
-    SUBWF   NUM2_BYTE3_AND_RESULT, F
-	
-    RETURN
+	BSF     STATUS, C
+	MOVFW    NUM1_BYTE0
+	SUBWF   NUM2_BYTE0_AND_RESULT, F
+	MOVFW    NUM1_BYTE1
+	BTFSS   STATUS, C        
+	ADDLW   .1                
+	SUBWF   NUM2_BYTE1_AND_RESULT, F
+	MOVFW    NUM1_BYTE2
+	BTFSS   STATUS, C
+	ADDLW   .1
+	SUBWF   NUM2_BYTE2_AND_RESULT, F
+	MOVFW    NUM1_BYTE3
+	BTFSS   STATUS, C
+	ADDLW   .1
+	SUBWF   NUM2_BYTE3_AND_RESULT, F
+
+	RETURN
 
 ; MULTIPLICA NUM3 POR NUM4 E GUARDA O RESULTADO EM ACCUM
 MULT_32_32
@@ -615,58 +568,56 @@ MULT_SHIFT
 	
 ; DIVIDE NUM3 POR NUM4 E GUARDA O RESULTADO EM NUM3
 DIV_32_32
+	MOVLW   .32
+	MOVWF   COUNT
 
-    MOVLW   .32
-    MOVWF   COUNT
-
-    CLRF    REM_BYTE0
-    CLRF    REM_BYTE1
-    CLRF    REM_BYTE2
-    CLRF    REM_BYTE3
+	CLRF    REM_BYTE0
+	CLRF    REM_BYTE1
+	CLRF    REM_BYTE2
+	CLRF    REM_BYTE3
 
 DIV_LOOP
-    BCF     STATUS,C
-    RLF     NUM3_BYTE0
-    RLF     NUM3_BYTE1
-    RLF     NUM3_BYTE2
-    RLF     NUM3_BYTE3
+	BCF     STATUS,C
+	RLF     NUM3_BYTE0
+	RLF     NUM3_BYTE1
+	RLF     NUM3_BYTE2
+	RLF     NUM3_BYTE3
 
-    RLF     REM_BYTE0
-    RLF     REM_BYTE1
-    RLF     REM_BYTE2
-    RLF     REM_BYTE3
-    
-    MOVLW   0x3B
-    MOVWF   FILE_ADDR_1
-    MOVLW   0x2B
-    MOVWF   FILE_ADDR_2
-    CALL    MOV_F_F
-    
-    MOVLW   0x33
-    MOVWF   FILE_ADDR_1
-    MOVLW   0x27
-    MOVWF   FILE_ADDR_2
-    CALL    MOV_F_F
+	RLF     REM_BYTE0
+	RLF     REM_BYTE1
+	RLF     REM_BYTE2
+	RLF     REM_BYTE3
 
-    CALL    SUB_32_32
+	MOVLW   0x3B
+	MOVWF   FILE_ADDR_1
+	MOVLW   0x2B
+	MOVWF   FILE_ADDR_2
+	CALL    MOV_F_F
 
-    BTFSS   STATUS,C
-    GOTO    DIV_TOO_SMALL
-    
-    MOVLW   0x2B
-    MOVWF   FILE_ADDR_1
-    MOVLW   0x3B
-    MOVWF   FILE_ADDR_2
-    CALL    MOV_F_F
+	MOVLW   0x33
+	MOVWF   FILE_ADDR_1
+	MOVLW   0x27
+	MOVWF   FILE_ADDR_2
+	CALL    MOV_F_F
 
-    BSF     NUM3_BYTE0,0
+	CALL    SUB_32_32
+
+	BTFSS   STATUS,C
+	GOTO    DIV_TOO_SMALL
+
+	MOVLW   0x2B
+	MOVWF   FILE_ADDR_1
+	MOVLW   0x3B
+	MOVWF   FILE_ADDR_2
+	CALL    MOV_F_F
+
+	BSF     NUM3_BYTE0,0
 
 DIV_TOO_SMALL
+	DECFSZ  COUNT
+	GOTO    DIV_LOOP
 
-    DECFSZ  COUNT
-    GOTO    DIV_LOOP
-
-    RETURN
+	RETURN
 	
 FIND_T_FINE
 	;FIND VAR1
@@ -1840,14 +1791,6 @@ INICIO
 	MOVLW	B'00000111'
 	MOVWF	CMCON		;DEFINE O MODO DE OPERA√?√?O DO COMPARADOR ANAL√?GICO
 
-;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-;*                     INICIALIZA√?√?O DAS VARI√ÅVEIS                 *
-;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-
-;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-;*                     ROTINA PRINCIPAL                            *
-;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-
 MAIN	
 	BCF	BLUE_LED
 	BSF	GREEN_LED
@@ -2506,10 +2449,5 @@ FIM
 	CALL	DELAY_100
 	
 	GOTO	FIM
-
-
-;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-;*                       FIM DO PROGRAMA                           *
-;* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 	END

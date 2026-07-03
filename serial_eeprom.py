@@ -110,7 +110,7 @@ class SerialEEPROM:
             ser.write(self.pacotes["parar"])
             ser.write(self.pacotes["receber"])
 
-            print("Esperando dados do PIC...")
+            print("Esperando dados do altímetro...")
 
             pressao_base = 0
             self.altitudes = []
@@ -136,17 +136,17 @@ class SerialEEPROM:
                     trigger_memory_addr = (data[4] << 8) | data[5]
 
                     # Os quatro últimos bytes são dois valores de pressão
-                    p1 = (data[6] << 8) | data[7]
-                    pressao_base = p1 * 10
-                    p2 = (data[8] << 8) | data[9]
+                    p1 = ((data[6] << 8) | data[7]) * 10
+                    pressao_base = p1
+                    p2 = ((data[8] << 8) | data[9]) * 10
 
-                    self.altitudes.append(altitude1 := self.pressureToAltitude(pressao_base, p1 * 10))
-                    self.altitudes.append(altitude2 := self.pressureToAltitude(pressao_base, p2 * 10))
+                    self.altitudes.append(altitude1 := self.pressureToAltitude(pressao_base, p1))
+                    self.altitudes.append(altitude2 := self.pressureToAltitude(pressao_base, p2))
 
                     first_value = False
 
-                    print(f'{hex(p1)} -> {p1 * 10} Pa -> {altitude1}m')
-                    print(f'{hex(p2)} -> {p2 * 10} Pa -> {altitude2}m')
+                    print(f'{hex(p1)} -> {p1} Pa -> {altitude1}m')
+                    print(f'{hex(p2)} -> {p2} Pa -> {altitude2}m')
 
                 else:
                     # Três valores de pressão
@@ -156,9 +156,9 @@ class SerialEEPROM:
                                 read = False
                                 ser.write(self.pacotes["parar"])
                                 break
-                        pressure = (data[i] << 8) | data[i + 1]
-                        self.altitudes.append(altitude := self.pressureToAltitude(pressao_base, pressure * 10))
-                        print(f'{hex(pressure)} -> {pressure * 10} Pa -> {altitude}m')
+                        pressure = ((data[i] << 8) | data[i + 1]) * 10
+                        self.altitudes.append(altitude := self.pressureToAltitude(pressao_base, pressure))
+                        print(f'{hex(pressure)} -> {pressure} Pa -> {altitude}m')
 
                 # Solicita o próximo pacote
                 if read: 
@@ -196,7 +196,7 @@ class SerialEEPROM:
             ser = serial.Serial(self.SERIAL_PORT, self.baud_rate, timeout=0.1)
             ser.write(self.pacotes["infos"])
 
-            print("Esperando dados do PIC...")
+            print("Esperando dados do altímetro...")
 
             data = ser.read(12) 
             id_alt = data[5]
@@ -225,7 +225,7 @@ class SerialEEPROM:
             ser = serial.Serial(self.SERIAL_PORT, self.baud_rate, timeout=0.1)
             ser.write(self.pacotes["libera_voo"])
 
-            print("Esperando resposta do PIC...")
+            print("Esperando resposta do altímetro...")
 
             data = ser.read(12) 
 
@@ -249,7 +249,7 @@ class SerialEEPROM:
             ser = serial.Serial(self.SERIAL_PORT, self.baud_rate, timeout=0.2)
             ser.write(self.pacotes["mede_bmp"])
 
-            print("Esperando resposta do PIC...")
+            print("Esperando resposta do altímetro...")
 
             data = ser.read(12) 
 
@@ -274,7 +274,7 @@ class SerialEEPROM:
             ser = serial.Serial(self.SERIAL_PORT, self.baud_rate, timeout=0.6)
             ser.write(self.pacotes["testa_eeprom"])
 
-            print("Esperando resposta do PIC...")
+            print("Esperando resposta do altímetro...")
 
             data = ser.read(12) 
 
