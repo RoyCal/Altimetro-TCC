@@ -4,8 +4,8 @@ import time
 # ==========================
 # Configuração da porta
 # ==========================
-PORTA = "COM6"      # Altere para sua porta
-BAUDRATE = 9600
+PORTA = "COM4"      # Altere para sua porta
+BAUDRATE = 19200
 
 ser = serial.Serial(
     port=PORTA,
@@ -82,14 +82,14 @@ while True:
             251,
             1,
             84,
-            1,
+            2,
             255,
             255,
             255,
             255,
             255,
             255,
-            76
+            77
         ]),
         "5": bytes([
             1,

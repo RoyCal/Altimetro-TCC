@@ -83,6 +83,20 @@ class SerialEEPROM:
             255,
             255,
             41
+        ]),
+        "testa_eeprom": bytes([
+            1,
+            251,
+            1,
+            84,
+            2,
+            255,
+            255,
+            255,
+            255,
+            255,
+            255,
+            77
         ])
     }
 
@@ -158,6 +172,7 @@ class SerialEEPROM:
 
             print("\nFim da transmissão.")
             print(f"Total de amostras: {len(self.altitudes)}")
+            print()
 
             self.time_stamps = []
             moment = 0
@@ -193,6 +208,7 @@ class SerialEEPROM:
             print(f"Versão -> software: {id_software}, hardware: {id_hardware}")
             print(f"Contagem de voos: {flights_conter}")
             print(f"Status: {status} ({"recupere os dados" if status == 0x00 else "memória livre"})")
+            print()
 
         except:
             print(f"Porta {self.SERIAL_PORT} não disponível")
@@ -218,6 +234,7 @@ class SerialEEPROM:
                 data = ser.read(12)
 
             print("Voo liberado!")
+            print()
 
         except:
             print(f"Porta {self.SERIAL_PORT} não disponível")
@@ -240,8 +257,35 @@ class SerialEEPROM:
                 ser.write(self.pacotes["mede_bmp"])
                 data = ser.read(12)
 
-            pressure = int.from_bytes(data[4:8], byteorder="big")
+            pressure = int.from_bytes(data[5:9], byteorder="big")
             print(f"Valor lido pelo BMP: {pressure} Pa ({hex(pressure)})")
+            print()
+
+        except:
+            print(f"Porta {self.SERIAL_PORT} não disponível")
+        finally:
+            try:
+                ser.close()
+            except UnboundLocalError as e:
+                print(f"{e}: Por favor, espere a recuperação terminar!")
+    
+    def test_eeprom(self):
+        try:
+            ser = serial.Serial(self.SERIAL_PORT, self.baud_rate, timeout=0.6)
+            ser.write(self.pacotes["testa_eeprom"])
+
+            print("Esperando resposta do PIC...")
+
+            data = ser.read(12) 
+
+            while data[3] != 86:
+                ser.write(self.pacotes["testa_eeprom"])
+                data = ser.read(12)
+
+            print("Escrevendo 1, 2, 3, 4 na EEPROM...")
+            print(f"Valores lidos da EEPROM: {data[5]}, {data[6]}, {data[7]}, {data[8]}")
+            print("Valores originais restaurados...")
+            print()
 
         except:
             print(f"Porta {self.SERIAL_PORT} não disponível")
@@ -266,8 +310,4 @@ def plot_altitude(time_stamps, altitudes):
         print("Falha ao gerar o gráfico")
 
 if __name__ == "__main__":
-    serial_eeprom = SerialEEPROM()
-    result = serial_eeprom.retrieve_data()
-    if result:
-        time_stamps, altitudes = result
-        plot_altitude(time_stamps, altitudes)
+    print("serial_eeprom.py")

@@ -214,17 +214,18 @@ class RetrieveDataScreen(Screen):
             )
             
             with Horizontal(id="button_container"):
-                yield Button("Reload page", id="btn_reload", variant="primary")
                 yield Button("Clear log", id="btn_clr_log", variant="primary")
                 yield Button("Device info", id="btn_info", variant="primary")
                 yield Button("Enable flight", id="btn_enable", variant="primary")
                 yield Button("Test BMP", id="btn_test_bmp", variant="primary")
+                yield Button("Test EEPROM", id="btn_test_eeprom", variant="primary")
                 yield Button("Iniciar recuperação", id="btn_retrieve", variant="success")
 
             yield Log(id="log_output", highlight=True, auto_scroll=True)
             with Horizontal(id="button_container2"):
                 yield Button("Cadastrar no banco", id="btn_save", variant="success")
                 yield Button("Voltar", id="btn_back", variant="error")
+                yield Button("Reload page", id="btn_reload", variant="primary")
 
     def write_log(self, message: str) -> None:
         log_output = self.query_one("#log_output", Log)
@@ -303,6 +304,17 @@ class RetrieveDataScreen(Screen):
                 serial_eeprom.SERIAL_PORT = selected_port
 
                 serial_eeprom.test_bmp()
+
+            case "btn_test_eeprom":
+                selected_port = self.query_one("#serial_port_select", Select).value
+
+                if not selected_port or selected_port == Select.NULL:
+                    self.notify("Selecione uma porta serial antes de testar a EEPROM")
+                    return
+                
+                serial_eeprom.SERIAL_PORT = selected_port
+
+                serial_eeprom.test_eeprom()
 
 # ------ CADASTRAR NO BANCO ------
 class SaveMeasurementScreen(Screen):
