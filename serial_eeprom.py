@@ -151,8 +151,8 @@ class SerialEEPROM:
                 else:
                     # Três valores de pressão
                     for i in range(4, 10, 2):
-                        if data[i] == 0x52:
-                            if data[i+1] == 0x53:
+                        if data[i] == 0xFF:
+                            if data[i+1] == 0xFF:
                                 read = False
                                 ser.write(self.pacotes["parar"])
                                 break

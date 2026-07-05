@@ -138,10 +138,8 @@ class MysqlHandler:
 
 if __name__ == "__main__":
     mysql_handler = MysqlHandler()
-
-    print(mysql_handler.get_users())
     
-    altitudes = mysql_handler.get_altitudes_measurements(2)
+    altitudes = mysql_handler.get_altitudes_measurements(4)
     altitudes = [altitude[1] for altitude in altitudes]
     
     time_stamps = []
