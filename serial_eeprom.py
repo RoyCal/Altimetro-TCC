@@ -13,6 +13,8 @@ class SerialEEPROM:
         self.baud_rate = 19200
         self.altitudes = []
         self.timestamps = []
+        self.croppedAltitudes = []
+        self.croppedTimestamps = []
         self.pacotes = {
         "receber": bytes([
             1,
@@ -294,6 +296,16 @@ class SerialEEPROM:
                 ser.close()
             except UnboundLocalError as e:
                 print(f"{e}: Por favor, espere a recuperação terminar!")
+
+    def crop_graph_end(self, amount):
+        amount = int(len(self.altitudes) - amount*self.ALT_FREQ)
+
+        self.croppedAltitudes = self.altitudes[:-amount]
+        self.croppedTimestamps = self.time_stamps[:-amount]
+    
+    def confirm_crop(self):
+        self.altitudes = self.croppedAltitudes
+        self.time_stamps = self.croppedTimestamps
 
 def plot_altitude(time_stamps, altitudes):
     """Module-level plot function so it can be used as a multiprocessing

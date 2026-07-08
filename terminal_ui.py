@@ -223,6 +223,8 @@ class RetrieveDataScreen(Screen):
 
             yield Log(id="log_output", highlight=True, auto_scroll=True)
             with Horizontal(id="button_container2"):
+                yield Button("Visualizar gráfico", id="btn_visualize", variant="primary")
+                yield Button("Recortar gráfico", id="btn_crop", variant="primary")
                 yield Button("Cadastrar no banco", id="btn_save", variant="success")
                 yield Button("Voltar", id="btn_back", variant="error")
                 yield Button("Reload page", id="btn_reload", variant="primary")
@@ -243,7 +245,7 @@ class RetrieveDataScreen(Screen):
             p.daemon = True
             p.start()
         except Exception as e:
-            print("Erro ao iniciar plot:", e)
+            self.notify("Erro ao iniciar plot")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         match event.button.id:
@@ -270,6 +272,10 @@ class RetrieveDataScreen(Screen):
                 self.query_one("#log_output", Log).clear()
 
             case "btn_save":
+                if not serial_eeprom.altitudes:
+                    self.notify("Nenhuma medição disponível para cadastrar")
+                    return
+                
                 self.app.push_screen("save_measurement_screen")
             
             case "btn_info":
@@ -315,6 +321,96 @@ class RetrieveDataScreen(Screen):
                 serial_eeprom.SERIAL_PORT = selected_port
 
                 serial_eeprom.test_eeprom()
+
+            case "btn_visualize":
+                if not serial_eeprom.altitudes:
+                    self.notify("Nenhum gráfico para visualizar")
+                    return
+                
+                altitudes = serial_eeprom.altitudes
+                time_stamps = serial_eeprom.time_stamps
+
+                try:
+                    import multiprocessing
+
+                    p = multiprocessing.Process(target=plot_altitude, args=(time_stamps, altitudes))
+                    p.daemon = True
+                    p.start()
+                except Exception as e:
+                    self.notify("Erro ao iniciar plot")
+            
+            case "btn_crop":
+                if not serial_eeprom.altitudes:
+                    self.notify("Nenhum gráfico para recortar")
+                    return
+                
+                self.app.push_screen("crop_graph_screen")
+
+# ------ RECORTAR GRÁFICO ------
+
+class CropGraphScreen(Screen):
+    CSS = """
+    Screen {
+        content-align: center middle;
+    }
+
+    Static {
+        margin: 1;
+    }
+
+    Button {
+        margin: 1;
+    }
+    """
+
+    def on_mount(self):
+        self.query_one("#input_amount").focus()
+
+    def compose(self) -> ComposeResult:
+        with VerticalScroll():
+            yield Static("Tempo máximo do gráfico (s)", id="title")
+            yield Input(placeholder="Quantidade para recorte", id="input_amount")
+            with Horizontal(id="button_container"):
+                yield Button("Recortar", id="btn_crop", variant="primary")
+                yield Button("Confirmar recorte", id="btn_confirm_crop", variant="success")
+                yield Button("Voltar", id="btn_back", variant="error")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        match event.button.id:
+            case "btn_back":
+                self.app.pop_screen()
+            
+            case "btn_crop":
+                amount_str = self.query_one("#input_amount", Input).value.strip()
+                try:
+                    amount = float(amount_str)
+                except ValueError:
+                    self.notify("Digite um número válido")
+                    return
+                
+                if amount <= 0:
+                    self.notify("Digite um número maior que zero")
+                    return
+                
+                if amount*serial_eeprom.ALT_FREQ >= len(serial_eeprom.altitudes):
+                    self.notify(f"Digite um número menor que {len(serial_eeprom.altitudes)/serial_eeprom.ALT_FREQ}")
+                    return
+
+                serial_eeprom.crop_graph_end(amount)
+                self.notify(f"Gráfico recortado em {amount} segundos")
+
+                try:
+                    import multiprocessing
+
+                    p = multiprocessing.Process(target=plot_altitude, args=(serial_eeprom.croppedTimestamps, serial_eeprom.croppedAltitudes))
+                    p.daemon = True
+                    p.start()
+                except Exception as e:
+                    self.notify("Erro ao iniciar plot")
+            
+            case "btn_confirm_crop":
+                serial_eeprom.confirm_crop()
+                self.notify("Gráfico recortado!")
 
 # ------ CADASTRAR NO BANCO ------
 class SaveMeasurementScreen(Screen):
@@ -376,10 +472,6 @@ class SaveMeasurementScreen(Screen):
                     self.notify("Selecione um usuário")
                     return
 
-                if not serial_eeprom.altitudes:
-                    self.notify("Nenhuma medição disponível para cadastrar")
-                    return
-
                 try:
                     id_tipo = mysql_handler.insert_tipo_valor(user_id, title, description)
                     mysql_handler.insert_altitudes_measurements(id_tipo, serial_eeprom.altitudes)
@@ -397,6 +489,7 @@ class MyApp(App):
         "add_user_screen": AddUserScreen,
         "retrieve_data_screen": RetrieveDataScreen,
         "save_measurement_screen": SaveMeasurementScreen,
+        "crop_graph_screen": CropGraphScreen,
     }
 
     def __init__(self):
