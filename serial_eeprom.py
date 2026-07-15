@@ -110,6 +110,11 @@ class SerialEEPROM:
             ser = serial.Serial(self.SERIAL_PORT, self.baud_rate, timeout=0.1)
 
             ser.write(self.pacotes["parar"])
+            ack = ser.read(12)
+            while ack[3] != 6:
+                ser.write(self.pacotes["parar"])
+                ack = ser.read(12)
+
             ser.write(self.pacotes["receber"])
 
             print("Esperando dados do altímetro...")
@@ -126,6 +131,10 @@ class SerialEEPROM:
 
                 if len(data) < 12:
                     ser.write(self.pacotes["parar"])
+                    ack = ser.read(12)
+                    while ack[3] != 6:
+                        ser.write(self.pacotes["parar"])
+                        ack = ser.read(12)
                     break
 
                 # Verifica erro na transmissão
@@ -157,6 +166,10 @@ class SerialEEPROM:
                             if data[i+1] == 0xFF:
                                 read = False
                                 ser.write(self.pacotes["parar"])
+                                ack = ser.read(12)
+                                while ack[3] != 6:
+                                    ser.write(self.pacotes["parar"])
+                                    ack = ser.read(12)
                                 break
                         pressure = ((data[i] << 8) | data[i + 1]) * 10
                         self.altitudes.append(altitude := self.pressureToAltitude(pressao_base, pressure))
