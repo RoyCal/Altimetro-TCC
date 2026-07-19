@@ -171,9 +171,10 @@ class SerialEEPROM:
                                     ser.write(self.pacotes["parar"])
                                     ack = ser.read(12)
                                 break
-                        pressure = ((data[i] << 8) | data[i + 1]) * 10
+                        raw_pressure = ((data[i] << 8) | data[i + 1])
+                        pressure = raw_pressure * 10
                         self.altitudes.append(altitude := self.pressureToAltitude(pressao_base, pressure))
-                        print(f'{hex(pressure)} -> {pressure} Pa -> {altitude}m')
+                        print(f'{hex(raw_pressure)} -> {pressure} Pa -> {altitude}m')
 
                 # Solicita o próximo pacote
                 if read: 
