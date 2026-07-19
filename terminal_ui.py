@@ -409,6 +409,9 @@ class CropGraphScreen(Screen):
                     self.notify("Erro ao iniciar plot")
             
             case "btn_confirm_crop":
+                if not serial_eeprom.croppedAltitudes:
+                    self.notify("Nenhum gráfico recortado para confirmar")
+                    return
                 serial_eeprom.confirm_crop()
                 self.notify("Gráfico recortado!")
 
