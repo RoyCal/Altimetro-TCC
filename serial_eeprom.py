@@ -122,6 +122,9 @@ class SerialEEPROM:
             pressao_base = 0
             self.altitudes = []
             read = True
+            self.time_stamps = []
+            moment = 0
+            period = 1/self.ALT_FREQ
 
             first_value = True
             trigger_memory_addr = None
@@ -147,17 +150,23 @@ class SerialEEPROM:
                     trigger_memory_addr = (data[4] << 8) | data[5]
 
                     # Os quatro últimos bytes são dois valores de pressão
-                    p1 = ((data[6] << 8) | data[7]) * 10
+                    raw_p1 = ((data[6] << 8) | data[7])
+                    p1 = raw_p1 * 10
                     pressao_base = p1
-                    p2 = ((data[8] << 8) | data[9]) * 10
+                    raw_p2 = ((data[8] << 8) | data[9])
+                    p2 = raw_p2 * 10
 
                     self.altitudes.append(altitude1 := self.pressureToAltitude(pressao_base, p1))
                     self.altitudes.append(altitude2 := self.pressureToAltitude(pressao_base, p2))
+                    self.time_stamps.append(moment)
+                    moment += period
+                    self.time_stamps.append(moment)
+                    moment += period
 
                     first_value = False
 
-                    print(f'{hex(p1)} -> {p1} Pa -> {altitude1}m')
-                    print(f'{hex(p2)} -> {p2} Pa -> {altitude2}m')
+                    print(f'{hex(raw_p1)} -> {p1} Pa -> {altitude1}m')
+                    print(f'{hex(raw_p2)} -> {p2} Pa -> {altitude2}m')
 
                 else:
                     # Três valores de pressão
@@ -174,6 +183,8 @@ class SerialEEPROM:
                         raw_pressure = ((data[i] << 8) | data[i + 1])
                         pressure = raw_pressure * 10
                         self.altitudes.append(altitude := self.pressureToAltitude(pressao_base, pressure))
+                        self.time_stamps.append(moment)
+                        moment += period
                         print(f'{hex(raw_pressure)} -> {pressure} Pa -> {altitude}m')
 
                 # Solicita o próximo pacote
@@ -185,16 +196,11 @@ class SerialEEPROM:
             print("Endereço do trigger:", trigger_memory_addr)
             print("Apogeu: ", self.altitudes[-1], "m", sep="")
             self.altitudes.pop()
+            self.time_stamps.pop()
 
             print("\nFim da transmissão.")
             print(f"Total de amostras: {len(self.altitudes)}")
             print()
-
-            self.time_stamps = []
-            moment = 0
-            for i in range(0, len(self.altitudes)):
-                self.time_stamps.append(moment)
-                moment += 1 / self.ALT_FREQ
 
             trigger_memory_addr //= 2
             self.altitudes = self.altitudes[trigger_memory_addr-1:self.CYCLE_ADDR_LIMIT] + self.altitudes[:trigger_memory_addr-1] + self.altitudes[self.CYCLE_ADDR_LIMIT:]
